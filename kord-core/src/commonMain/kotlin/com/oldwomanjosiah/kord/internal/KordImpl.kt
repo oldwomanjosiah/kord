@@ -9,6 +9,7 @@ import com.oldwomanjosiah.kord.KordLine
  */
 internal class KordImpl internal constructor(
     private val root: KordNode? = null,
+    private val config: KordConfig,
     private val randomProvider: () -> Int,
 ): Kord {
     override val length: Int
@@ -36,6 +37,8 @@ internal class KordImpl internal constructor(
             throw IndexOutOfBoundsException("Kord is $length chars long, cannot access $range")
         }
     }
+
+    private fun withRoot(root: KordNode?) = KordImpl(root, config, randomProvider)
 
     /**
      * Cuts the tree into the text before, inside and after an in-bounds [range].
@@ -79,7 +82,7 @@ internal class KordImpl internal constructor(
             0 -> KordNode.merge(node, root)
             length -> KordNode.merge(root, node)
             else -> {
-                val (left, right) = root?.split(at) ?: return KordImpl(node, randomProvider)
+                val (left, right) = root?.split(at) ?: return withRoot(node)
 
                 KordNode.merge(
                     KordNode.merge(
@@ -91,7 +94,7 @@ internal class KordImpl internal constructor(
             }
         }
 
-        return KordImpl(merged, randomProvider)
+        return withRoot(merged)
     }
 
     override fun replace(charRange: IntRange, contents: String): KordImpl {
@@ -103,7 +106,7 @@ internal class KordImpl internal constructor(
         val node = KordNode(contents, randomProvider())
         val (left, _, right) = cut(charRange)
 
-        return KordImpl(KordNode.merge(KordNode.merge(left, node), right), randomProvider)
+        return withRoot(KordNode.merge(KordNode.merge(left, node), right))
     }
 
     override fun remove(charRange: IntRange): KordImpl {
@@ -113,7 +116,7 @@ internal class KordImpl internal constructor(
 
         val (left, _, right) = cut(charRange)
 
-        return KordImpl(KordNode.merge(left, right), randomProvider)
+        return withRoot(KordNode.merge(left, right))
     }
 
     override fun chunks(charRange: IntRange): Iterable<KordChunk> {
@@ -139,8 +142,8 @@ internal class KordImpl internal constructor(
         val (lhs, rhs) = root?.split(at) ?: return Pair(this, this)
 
         return Pair(
-            KordImpl(lhs, randomProvider),
-            KordImpl(rhs, randomProvider),
+            withRoot(lhs),
+            withRoot(rhs),
         )
     }
 
@@ -151,13 +154,10 @@ internal class KordImpl internal constructor(
         checkRange(charRange)
 
         val (left, region, right) = cut(charRange)
-        val new = KordImpl(region, randomProvider).block(left.length)
+        val new = withRoot(region).block(left.length)
 
         require(new is KordImpl) { "edit's block must return a Kord created by this library, got ${new::class}" }
 
-        return KordImpl(
-            KordNode.merge(KordNode.merge(left, new.root), right),
-            randomProvider,
-        )
+        return withRoot(KordNode.merge(KordNode.merge(left, new.root), right))
     }
 }
