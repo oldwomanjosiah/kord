@@ -1,4 +1,4 @@
-package org.example
+package com.oldwomanjosiah.kord
 
 /**
  * Rope Data Structure.

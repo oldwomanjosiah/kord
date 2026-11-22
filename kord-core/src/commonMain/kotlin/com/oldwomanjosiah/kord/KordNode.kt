@@ -1,4 +1,4 @@
-package org.example
+package com.oldwomanjosiah.kord
 
 internal class KordNode(
     val contents: String,

@@ -1,4 +1,4 @@
-package org.example
+package com.oldwomanjosiah.kord.internal
 
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe

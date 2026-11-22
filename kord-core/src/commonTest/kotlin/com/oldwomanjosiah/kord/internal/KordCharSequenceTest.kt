@@ -1,5 +1,6 @@
-package org.example
+package com.oldwomanjosiah.kord.internal
 
+import com.oldwomanjosiah.kord.kordOf
 import io.kotest.assertions.assertSoftly
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.assertions.withClue

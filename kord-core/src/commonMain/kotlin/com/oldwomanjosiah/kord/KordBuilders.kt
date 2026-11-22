@@ -1,11 +1,11 @@
-package org.example
+package com.oldwomanjosiah.kord
 
 import kotlin.random.Random
 
 /**
  * Create a new `Kord` with the concatenated values provided.
  *
- * This overload uses a standard [kotlin.random.Random] instance, seeded with the global instance of itself. This is not
+ * This overload uses a standard [Random] instance, seeded with the global instance of itself. This is not
  * secure against DOS attacks, so it should not be used with untrusted input.
  */
 fun kordOf(vararg of: String): Kord {

@@ -1,4 +1,4 @@
-package org.example
+package com.oldwomanjosiah.kord.internal
 
 import io.kotest.assertions.assertSoftly
 import io.kotest.assertions.withClue

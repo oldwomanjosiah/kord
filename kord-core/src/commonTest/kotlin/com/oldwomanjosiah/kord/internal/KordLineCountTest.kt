@@ -1,5 +1,6 @@
-package org.example
+package com.oldwomanjosiah.kord.internal
 
+import com.oldwomanjosiah.kord.kordOf
 import io.kotest.assertions.assertSoftly
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
@@ -8,7 +9,7 @@ import io.kotest.property.checkAll
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
-/** [Kord.lines] through the public API, especially CRLF pairs formed or split by edits. */
+/** [com.oldwomanjosiah.kord.Kord.lines] through the public API, especially CRLF pairs formed or split by edits. */
 class KordLineCountTest {
     @Test
     fun `line count is one more than the line breaks`() {

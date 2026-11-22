@@ -1,5 +1,8 @@
-package org.example
+package com.oldwomanjosiah.kord.internal
 
+import com.oldwomanjosiah.kord.Kord
+import com.oldwomanjosiah.kord.KordNode
+import com.oldwomanjosiah.kord.kordOf
 import io.kotest.assertions.withClue
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
@@ -10,6 +13,7 @@ import io.kotest.property.arbitrary.list
 import io.kotest.property.arbitrary.long
 import io.kotest.property.arbitrary.map
 import kotlin.random.Random
+import kotlin.text.iterator
 
 // ---------------------------------------------------------------------------
 // Reference model
@@ -46,7 +50,7 @@ internal fun String.debug() = buildString {
 // Public API helpers
 // ---------------------------------------------------------------------------
 
-/** Reads a Kord's text back through [Kord.get] only, independent of [Kord.chunks]. */
+/** Reads a Kord's text back through [get] only, independent of [chunks]. */
 internal fun Kord.text(): String = buildString { for (i in 0 until this@text.length) append(this@text[i]) }
 
 internal fun kordOf(parts: List<String>): Kord = kordOf(*parts.toTypedArray())

@@ -1,5 +1,6 @@
-package org.example
+package com.oldwomanjosiah.kord.internal
 
+import com.oldwomanjosiah.kord.KordNode
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb

@@ -1,4 +1,4 @@
-package org.example
+package com.oldwomanjosiah.kord
 
 /** A [CharSequence] over [range] of [kord], indexed from the start of the range. */
 internal class KordCharSequence(
