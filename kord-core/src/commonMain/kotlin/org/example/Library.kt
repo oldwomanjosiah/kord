@@ -50,7 +50,7 @@ interface Kord: CharSequence {
 
     fun insert(contents: String): Kord
 
-    fun remove(range: IntRange): Kord
+    fun remove(charRange: IntRange): Kord
 
     fun lineRange(lineIdx: Int): IntRange
 

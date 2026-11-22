@@ -129,9 +129,9 @@ internal class KordNode(
     }
 
     fun view(viewRange: IntRange, offset: Int = 0): KordNodeView = if (viewRange.last < firstIndex) {
-        left!!.view(viewRange)
+        left!!.view(viewRange, offset)
     } else if (viewRange.first >= endIndexExclusive) {
-        right!!.view(viewRange.first - endIndexExclusive..viewRange.last - endIndexExclusive, endIndexExclusive)
+        right!!.view(viewRange.first - endIndexExclusive..viewRange.last - endIndexExclusive, offset + endIndexExclusive)
     } else {
         KordNodeView(this, offset, viewRange)
     }
@@ -147,18 +147,14 @@ internal class KordNode(
         endIdx,
     )
 
-    inline fun <R> foldLeft(
-        acc: R,
-        block: (R, KordNode) -> R): R {
+    /** Calls [block] on this node, then its left child, then that child's left child, and so on. */
+    inline fun forEachLeftSpine(block: (KordNode) -> Unit) {
         var current: KordNode? = this
-        var acc = acc
 
         while (current != null) {
-            acc = block(acc, current)
+            block(current)
             current = current.left
         }
-
-        return acc
     }
 
     override fun iterator(): Iterator<KordChunkImpl> {
@@ -171,9 +167,9 @@ internal class KordNode(
             }
 
             override fun next(): KordChunkImpl {
-                val item = stack.removeLastOrNull() ?: throw IllegalStateException("Iter Exhausted")
+                val item = stack.removeLastOrNull() ?: throw NoSuchElementException("Iter Exhausted")
 
-                item.right?.foldLeft(Unit) { _, it -> stack.add(it) }
+                item.right?.forEachLeftSpine { stack.add(it) }
                 val offset = currentOffset
 
                 currentOffset += item.contents.length
@@ -182,14 +178,10 @@ internal class KordNode(
             }
         }
 
-        val list = foldLeft(mutableListOf<KordNode>()) { acc, it ->
-            acc.add(it)
-            acc
-        }
+        val stack = mutableListOf<KordNode>()
+        forEachLeftSpine { stack.add(it) }
 
-        return Iter(
-            list
-        )
+        return Iter(stack)
     }
 }
 
@@ -206,75 +198,43 @@ internal data class KordChunkImpl(
         get() = startIdx + nodeCharOffset until endIdx + nodeCharOffset
 }
 
+/**
+ * A view over [viewRangeInNode] of the subtree rooted at [node].
+ *
+ * @param nodeCharOffset absolute char offset of the start of [node]'s subtree.
+ * @param viewRangeInNode range of chars to view, relative to the start of [node]'s subtree.
+ */
 internal class KordNodeView(
     val node: KordNode,
     val nodeCharOffset: Int,
     val viewRangeInNode: IntRange,
 ): Iterable<KordChunkImpl> {
-    override fun iterator(): Iterator<KordChunkImpl> {
-        val firstChar = viewRangeInNode.first
-        val lastCharExclusive = viewRangeInNode.last + 1
+    override fun iterator(): Iterator<KordChunkImpl> = iterator {
+        val viewStart = viewRangeInNode.first
+        val viewEndExclusive = viewRangeInNode.last + 1
 
-        class Iter(
-            var delegate: Iterator<KordChunkImpl>?,
-            var tmp: KordChunkImpl?
-        ): Iterator<KordChunkImpl> {
-            override fun hasNext(): Boolean {
-                if (tmp != null) return true
+        if (viewStart >= viewEndExclusive) return@iterator
 
-                val delegate = delegate ?: return false
+        // Chunks from node.iterator() have nodeCharOffset relative to the start of node's subtree.
+        for (chunk in node) {
+            val chunkStart = chunk.nodeCharOffset + chunk.startIdx
+            val chunkEndExclusive = chunk.nodeCharOffset + chunk.endIdx
 
-                if (!delegate.hasNext()) return false
-                var next = delegate.next()
+            // Before the view; keep going
+            if (chunkEndExclusive <= viewStart) continue
 
-                while (delegate.hasNext() && next.endIdx <= firstChar) {
-                    next = delegate.next()
-                }
+            // Past the view; done
+            if (chunkStart >= viewEndExclusive) break
 
-                return if (next.endIdx <= firstChar) {
-                    // we are past the end (endIdx is exclusive)
+            yield(
+                chunk.copy(
+                    nodeCharOffset = chunk.nodeCharOffset + nodeCharOffset,
+                    startIdx = maxOf(chunk.startIdx, viewStart - chunk.nodeCharOffset),
+                    endIdx = minOf(chunk.endIdx, viewEndExclusive - chunk.nodeCharOffset),
+                )
+            )
 
-                    this.delegate = null
-
-                    false
-                } else if (next.startIdx < firstChar) {
-                    // we are looking at the first item, and possibly the last
-
-                    tmp = next.copy(
-                        startIdx = firstChar - next.nodeCharOffset,
-                        endIdx = minOf(next.endIdx, lastCharExclusive - next.nodeCharOffset)
-                    )
-
-                    if (tmp?.endIdx != next.endIdx) this.delegate = null
-
-                    true
-                } else if (next.endIdx > lastCharExclusive) {
-                    // We are looking at the last item
-
-                    tmp = next.copy(
-                        // Not possible for the start to be different, since that would have been caught by the first run
-                        endIdx = lastCharExclusive - next.nodeCharOffset,
-                    )
-
-                    this.delegate = null
-
-                    true
-                } else {
-                    // We are looking at some item in the middle
-                    tmp = next
-
-                    true
-                }
-            }
-
-            override fun next(): KordChunkImpl {
-                val res = tmp
-                tmp = null
-                check(res != null) { "Iter Exhausted" }
-                return res
-            }
+            if (chunkEndExclusive >= viewEndExclusive) break
         }
-
-        return Iter(node.iterator(), null)
     }
 }

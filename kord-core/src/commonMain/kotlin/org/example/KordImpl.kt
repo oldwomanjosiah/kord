@@ -21,7 +21,7 @@ internal class KordImpl internal constructor(
     override fun get(index: Int): Char {
         checkIndexing(index)
 
-        return root!!.get(index)
+        return root!![index]
     }
 
     override fun isEmpty(): Boolean = root == null
@@ -32,28 +32,68 @@ internal class KordImpl internal constructor(
         TODO("Not yet implemented")
     }
 
+    override fun insert(contents: String): Kord = insert(length, contents)
+
     override fun insert(at: Int, contents: String): KordImpl {
-        checkIndexing(at)
+        checkIndexing(at, true)
 
         if (contents.isEmpty()) return this
 
         val node = KordNode(contents, randomProvider())
-        val (left, right) = root?.split(at) ?: return KordImpl(node, randomProvider)
 
-        val merged = KordNode.merge(
-            KordNode.merge(
-                left,
-                node,
-            ),
-            right,
-        )
+        val merged = when (at) {
+            0 -> KordNode.merge(node, root)
+            length -> KordNode.merge(root, node)
+            else -> {
+                val (left, right) = root?.split(at) ?: return KordImpl(node, randomProvider)
+
+                KordNode.merge(
+                    KordNode.merge(
+                        left,
+                        node,
+                    ),
+                    right,
+                )
+            }
+        }
 
         return KordImpl(merged, randomProvider)
     }
 
-    override fun chunks(charRange: IntRange): Iterable<KordChunk> {
-        TODO("Not yet implemented")
+    override fun replace(charRange: IntRange, contents: String): Kord {
+        if (contents.isEmpty()) return remove(charRange)
+        if (charRange.isEmpty()) return insert(charRange.first, contents)
+
+        checkIndexing(charRange.first)
+        checkIndexing(charRange.last)
+
+        val node = KordNode(contents, randomProvider())
+
+        val (left, middle) = root!!.split(charRange.first)
+        val (_, right) = middle!!.split(charRange.last + 1 - charRange.first)
+
+        return KordImpl(KordNode.merge(KordNode.merge(left, node), right), randomProvider)
     }
+
+    override fun remove(charRange: IntRange): Kord {
+        checkIndexing(charRange.first)
+        checkIndexing(charRange.last)
+
+        val (left, middle) = root!!.split(charRange.first)
+        val (_, right) = middle!!.split(charRange.last + 1 - charRange.first)
+
+        return KordImpl(KordNode.merge(left, right), randomProvider)
+    }
+
+    override fun chunks(charRange: IntRange): Iterable<KordChunk> {
+        checkIndexing(charRange.first)
+        checkIndexing(charRange.last)
+
+        if (charRange.isEmpty()) return emptyList()
+
+        return root!!.view(charRange)
+    }
+
 
     override fun lines(lineRange: IntRange): Iterable<KordLine> {
         TODO("Not yet implemented")
