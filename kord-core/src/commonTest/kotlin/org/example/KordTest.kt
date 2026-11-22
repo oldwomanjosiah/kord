@@ -449,7 +449,7 @@ class InsertTest {
  * Builds a rope through the public `Kord(vararg of)` factory. The `Kord` interface has no members
  * yet, so reading anything back (length, split, insert) still needs a cast to the internal impl.
  */
-private fun kordOf(vararg parts: String): KordImpl = Kord(*parts) as KordImpl
+private fun kordOf(vararg parts: String): KordImpl = kordOf(*parts) as KordImpl
 private fun kordOf(parts: List<String>): KordImpl = kordOf(*parts.toTypedArray())
 
 class KordTest {
