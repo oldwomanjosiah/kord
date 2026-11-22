@@ -66,6 +66,21 @@ internal class NodeBuffer private constructor(
                 View(newBuffer, 0, length + subsectionLength)
             }
         }
+
+        override fun equals(other: Any?): Boolean {
+            val other = other as? View ?: return false
+
+            if (other === this) return true
+            if (other.length != length) return false
+            if (other.buffer === buffer && other.startIndex == startIndex) return true
+
+            // ContentEquals for applicable regions
+            for (i in indices) {
+                if (buffer.buffer[i + startIndex] != other.buffer.buffer[i + other.startIndex]) return false
+            }
+
+            return true
+        }
     }
 
     companion object {

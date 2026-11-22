@@ -1,5 +1,15 @@
 package com.oldwomanjosiah.kord
 
+/**
+ * Core Rope data-structure implementation.
+ *
+ * ### Newline Nudging
+ *
+ * For all edits which insert/remove content, if the index provided is within a `\r\n` then the edit will be
+ * placed _before_ the combo-newline. This is to prevent, as much as possible, having newlines split between chunks.
+ *
+ * @see kordOf constructor
+ */
 interface Kord {
     /**
      * Total char length of this `Kord`

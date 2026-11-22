@@ -5,11 +5,16 @@ internal val Char.isNewline: Boolean inline get() = when (this) {
     else -> false
 }
 
-internal val CharSequence.newlines: Int get() {
-    var idx = 0
+internal val CharSequence.newlines: Int get() = newlines()
+
+internal fun CharSequence.newlines(start: Int = 0, end: Int = length): Int {
+    if (start !in 0..length || end > length)
+        throw IndexOutOfBoundsException("Cannot count newlines in span [$start, $end) of CharSequence with length $length")
+
+    var idx = start
     var count = 0
 
-    while (idx < length) {
+    while (idx < end) {
         val curr = get(idx)
         val next = getOrNull(idx + 1)
 

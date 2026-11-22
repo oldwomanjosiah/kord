@@ -86,8 +86,8 @@ internal class KordImpl internal constructor(
             length -> KordNode.merge(randomProvider, config, root, contents)
 
             else -> {
-                val (left, right) = root?.split(at)
-                    ?: return withRoot(KordNode.merge(randomProvider, config, null, contents))
+                // Will have root bc adding at 0 (only legal place in empty list) was already covered
+                val (left, right) = root!!.split(at)
 
                 KordNode.merge(
                     KordNode.merge(

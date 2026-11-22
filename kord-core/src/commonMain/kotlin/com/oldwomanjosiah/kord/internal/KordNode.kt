@@ -168,12 +168,15 @@ internal class KordNode(
 
             // TODO should I double check for newline-straddling here?
 
-            val newNewlines = contents.newlines
+            var newNewlines = contents.newlines(end = lengthToAdd)
+
+            if (comboSegment.contents.last() == '\r' && contents.first() == '\n') newNewlines -= 1
+
             val newView = comboSegment.contents.tryGrow(contents, 0, lengthToAdd)!!
 
             comboStack.removeLast()
 
-            val newRoot = comboStack.asReversed().fold(comboSegment.with(newView)) { right, old ->
+            val newRoot = comboStack.asReversed().fold(comboSegment.with(newView, chunkNewlines = newNewlines + comboSegment.chunkNewlines)) { right, old ->
                 old.with(right = right)
             }
 
@@ -218,7 +221,7 @@ internal class KordNode(
         right,
     )
 
-    fun with(contents: NodeBuffer.View) = KordNode(
+    fun with(contents: NodeBuffer.View, chunkNewlines: Int = contents.newlines) = KordNode(
         contents,
         prio,
         left = left,
