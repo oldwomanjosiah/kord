@@ -2,6 +2,12 @@ package org.example
 
 import kotlin.random.Random
 
+/**
+ * Create a new `Kord` with the concatenated values provided.
+ *
+ * This overload uses a standard [kotlin.random.Random] instance, seeded with the global instance of itself. This is not
+ * secure against DOS attacks, so it should not be used with untrusted input.
+ */
 fun kordOf(vararg of: String): Kord {
     val seededRandom = Random(Random.nextLong())
 
@@ -11,6 +17,14 @@ fun kordOf(vararg of: String): Kord {
     )
 }
 
+/**
+ * Create a new `Kord` with the concatenated values provided.
+ *
+ * This overload is provided so that the randomness provider can be configured. When processing untrusted input,
+ * the chosen source should be seeded using a cryptographic RNG implementation.
+ *
+ * @param randomProvider new random integer per-call
+ */
 fun kordOf(
     vararg of: String,
     randomProvider: () -> Int,

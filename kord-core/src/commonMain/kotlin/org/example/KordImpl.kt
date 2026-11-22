@@ -12,7 +12,7 @@ internal class KordImpl internal constructor(
 
     /** Checks that [index] names a char: `0 until length`. */
     private fun checkIndex(index: Int) {
-        if (index !in indices) {
+        if (index !in 0 until length) {
             throw IndexOutOfBoundsException("Kord is $length chars long, cannot index at $index")
         }
     }
@@ -34,13 +34,13 @@ internal class KordImpl internal constructor(
     }
 
     /**
-     * Cuts the tree into the text before, inside and after a non-empty, in-bounds [range].
+     * Cuts the tree into the text before, inside and after an in-bounds [range].
      *
      * The end is cut first, so that both cuts are positions in the original text. Cutting the
      * start first would shift the end by one whenever the start is nudged before a CR.
      */
     private fun cut(range: IntRange): Triple<KordNode?, KordNode?, KordNode?> {
-        val (rest, right) = root!!.split(range.last + 1)
+        val (rest, right) = root?.split(range.last + 1) ?: return Triple(null, null, null)
         val (left, middle) = rest?.split(range.first) ?: (null to null)
 
         return Triple(left, middle, right)
@@ -56,8 +56,10 @@ internal class KordImpl internal constructor(
 
     override val lines: Int get() = (root?.newlines ?: 0) + 1
 
-    override fun subSequence(startIndex: Int, endIndex: Int): CharSequence {
-        TODO("Not yet implemented")
+    override fun charSequence(charRange: IntRange): CharSequence {
+        checkRange(charRange)
+
+        return KordCharSequence(this, if (charRange.isEmpty()) charRange.first until charRange.first else charRange)
     }
 
     override fun insert(contents: String) = insert(length, contents)
@@ -140,28 +142,17 @@ internal class KordImpl internal constructor(
 
     override fun edit(
         charRange: IntRange,
-        block: (Kord) -> Kord,
+        block: Kord.(offset: Int) -> Kord,
     ): KordImpl {
+        checkRange(charRange)
+
         val (left, region, right) = cut(charRange)
+        val new = KordImpl(region, randomProvider).block(left.length)
 
-        val new = block(
-            EditKord(
-                offset = left?.length ?: 0,
-                lineOffset = left?.newlines ?: 0,
-                outerLength = length,
-                delegate = KordImpl(region, randomProvider),
-            )
-        )
-
-        val newRegionRoot = when (new) {
-            is EditKord -> new.delegate.root
-            is KordImpl -> new.root
-
-            else -> error("edit's block must return a valid Kord")
-        }
+        require(new is KordImpl) { "edit's block must return a Kord created by this library, got ${new::class}" }
 
         return KordImpl(
-            KordNode.merge(KordNode.merge(left, newRegionRoot), right),
+            KordNode.merge(KordNode.merge(left, new.root), right),
             randomProvider,
         )
     }
