@@ -35,3 +35,13 @@ internal val String.newlines: Int get() {
 
 internal val KordNode?.length: Int inline get() = this?.length ?: 0
 internal val KordNode?.newlines: Int inline get() = this?.newlines ?: 0
+
+internal val Int.nextPowerOf2: Int
+    inline get() {
+        val nearest = takeHighestOneBit()
+
+        return when {
+            nearest < this -> nearest.shl(1)
+            else -> nearest
+        }
+    }
