@@ -103,24 +103,21 @@ internal class KordNode(
             if (startOffset !in 0..endOffsetExclusive || endOffsetExclusive > contents.length)
                 throw IndexOutOfBoundsException("Cannot create nodes from span [$startOffset, $endOffsetExclusive) of string with length ${contents.length}")
 
-            if (contents.isEmpty()) return null
+            if (startOffset == endOffsetExclusive) return null
 
             var startOffset = startOffset
 
             val values = buildList {
                 while (startOffset < endOffsetExclusive) {
-                    val remainingLength = minOf(endOffsetExclusive - startOffset, config.maxChunkSize)
+                    val remainingLength = endOffsetExclusive - startOffset
 
                     val itemLength = when {
                         remainingLength <= config.maxChunkSize -> remainingLength
 
-                        else -> minOf(
-                            adjustContents(startOffset, remainingLength),
-                            remainingLength,
-                        )
+                        else -> adjustContents(startOffset, config.maxChunkSize)
+                            .takeIf { it in 1..config.maxChunkSize }
+                            ?: config.maxChunkSize
                     }
-
-                    require(itemLength <= 0) { "adjustContents must return a positive value for the node size" }
 
                     val value = NodeBuffer(
                         config,
@@ -131,7 +128,7 @@ internal class KordNode(
 
                     add(value)
 
-                    startOffset += remainingLength
+                    startOffset += itemLength
                 }
             }
 
@@ -171,6 +168,7 @@ internal class KordNode(
 
             // TODO should I double check for newline-straddling here?
 
+            val newNewlines = contents.newlines
             val newView = comboSegment.contents.tryGrow(contents, 0, lengthToAdd)!!
 
             comboStack.removeLast()

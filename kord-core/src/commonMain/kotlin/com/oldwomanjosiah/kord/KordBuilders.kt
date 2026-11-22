@@ -4,7 +4,8 @@ import com.oldwomanjosiah.kord.internal.KordImpl
 import kotlin.random.Random
 
 /**
- * Create a new `Kord` with the concatenated values provided.
+ * Create a new `Kord` with the concatenated values provided. Components in `of` do not correspond directly to
+ * [Kord.chunks].
  *
  * This overload uses a standard [Random] instance, seeded with the global instance of itself. This is not
  * secure against DOS attacks, so it should not be used with untrusted input.
@@ -23,7 +24,8 @@ fun kordOf(
 }
 
 /**
- * Create a new `Kord` with the concatenated values provided.
+ * Create a new `Kord` with the concatenated values provided. Components in `of` do not correspond directly to
+ * [Kord.chunks].
  *
  * This overload is provided so that the randomness provider can be configured. When processing untrusted input,
  * the chosen source should be seeded using a cryptographic RNG implementation.

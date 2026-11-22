@@ -55,6 +55,15 @@ internal fun Kord.text(): String = buildString { for (i in 0 until this@text.len
 
 internal fun kordOf(parts: List<String>): Kord = kordOf(*parts.toTypedArray())
 
+/** Chunks hold at most two chars, so two-char parts each become exactly one chunk. */
+internal val twoCharChunks = KordConfig(maxChunkSize = 2, initialChunkSize = 1)
+
+/** A kord whose chunks are exactly [parts]; every part must be two chars long. */
+internal fun kordOfChunks(vararg parts: String): Kord {
+    require(parts.all { it.length == 2 }) { "kordOfChunks needs two-char parts" }
+    return kordOf(*parts, config = twoCharChunks)
+}
+
 /** Checks everything the public API can observe about [kord] against the expected [text]. */
 internal fun assertKordMatches(kord: Kord, text: String) {
     withClue("kord expected to be ${text.debug()}") {

@@ -14,19 +14,19 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
 class KordChunksTest {
-    private fun Kord.chunkPairs(range: IntRange = 0 until length) = chunks(range).map { it.contents to it.contentsRange }
+    private fun Kord.chunkPairs(range: IntRange = 0 until length) = chunks(range).map { it.contents.toString() to it.contentsRange }
 
     @Test
-    fun `chunks of the whole kord follow the factory parts`() {
-        kordOf("ab", "cd", "ef").chunkPairs() shouldBe listOf("ab" to 0..1, "cd" to 2..3, "ef" to 4..5)
+    fun `chunks of the whole kord follow node boundaries`() {
+        kordOfChunks("ab", "cd", "ef").chunkPairs() shouldBe listOf("ab" to 0..1, "cd" to 2..3, "ef" to 4..5)
     }
 
     @Test
     fun `chunks of a sub range are clipped with absolute ranges`() {
         assertSoftly {
-            kordOf("ab", "cd", "ef").chunkPairs(1..4) shouldBe listOf("b" to 1..1, "cd" to 2..3, "e" to 4..4)
-            kordOf("ab", "cd", "ef").chunkPairs(3..3) shouldBe listOf("d" to 3..3)
-            kordOf("ab", "cd", "ef").chunkPairs(4..5) shouldBe listOf("ef" to 4..5)
+            kordOfChunks("ab", "cd", "ef").chunkPairs(1..4) shouldBe listOf("b" to 1..1, "cd" to 2..3, "e" to 4..4)
+            kordOfChunks("ab", "cd", "ef").chunkPairs(3..3) shouldBe listOf("d" to 3..3)
+            kordOfChunks("ab", "cd", "ef").chunkPairs(4..5) shouldBe listOf("ef" to 4..5)
         }
     }
 

@@ -16,7 +16,7 @@ class KordNodeIteratorTest {
     fun `iterates chunks in order with subtree-relative offsets`() {
         val root = node("cd", 0, left = node("b", -1, left = leaf("a", -2)), right = node("e", -1, right = leaf("fgh", -2)))
 
-        root.map { it.contents } shouldBe listOf("a", "b", "cd", "e", "fgh")
+        root.map { it.contents.toString() } shouldBe listOf("a", "b", "cd", "e", "fgh")
         root.map { it.contentsRange } shouldBe listOf(0..0, 1..1, 2..3, 4..4, 5..7)
     }
 
@@ -35,7 +35,7 @@ class KordNodeIteratorTest {
             val iterated = tree.toList()
 
             withClue("chunks ${chunks.map { it.debug() }}") {
-                iterated.map { it.contents } shouldBe chunks
+                iterated.map { it.contents.toString() } shouldBe chunks
 
                 var offset = 0
                 for (chunk in iterated) {

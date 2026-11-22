@@ -39,8 +39,8 @@ class KordEditTest {
 
     @Test
     fun `chunks inside the block are relative to the region`() {
-        kordOf("ab", "cd", "ef").inspect(1..4) {
-            chunks().map { it.contents to it.contentsRange } shouldBe listOf("b" to 0..0, "cd" to 1..2, "e" to 3..3)
+        kordOfChunks("ab", "cd", "ef").inspect(1..4) {
+            chunks().map { it.contents.toString() to it.contentsRange } shouldBe listOf("b" to 0..0, "cd" to 1..2, "e" to 3..3)
         }
     }
 

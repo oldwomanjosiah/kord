@@ -14,7 +14,7 @@ class KordNodeViewTest {
     // "ab" "cd" "ef" with "cd" at the root
     private val root = node("cd", 0, left = leaf("ab", -1), right = leaf("ef", -1))
 
-    private fun KordNode.viewOf(range: IntRange) = view(range).map { it.contents to it.contentsRange }
+    private fun KordNode.viewOf(range: IntRange) = view(range).map { it.contents.toString() to it.contentsRange }
 
     @Test
     fun `view inside one chunk is clipped on both sides`() {
@@ -67,7 +67,7 @@ class KordNodeViewTest {
                     view.first().contentsRange.first shouldBe first
                     view.last().contentsRange.last shouldBe last
                     view.zipWithNext().forEach { (a, b) -> b.contentsRange.first shouldBe a.contentsRange.last + 1 }
-                    view.forEach { text.substring(it.contentsRange.first, it.contentsRange.last + 1) shouldBe it.contents }
+                    view.forEach { text.substring(it.contentsRange.first, it.contentsRange.last + 1) shouldBe it.contents.toString() }
                 }
             }
         }
