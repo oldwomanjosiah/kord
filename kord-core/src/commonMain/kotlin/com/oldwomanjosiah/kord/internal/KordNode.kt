@@ -57,9 +57,11 @@ internal class KordNode(
             }
         }
 
+        fun createBulk(randomProvider: () -> Int, vararg contents: NodeBuffer.View) = createBulk(randomProvider, contents.asList())
+
         fun createBulk(
             randomProvider: () -> Int,
-            vararg contents: NodeBuffer.View,
+            contents: List<NodeBuffer.View>,
         ): KordNode? {
             if (contents.isEmpty()) return null
 
@@ -90,24 +92,64 @@ internal class KordNode(
             return result
         }
 
+        fun createBulk(
+            randomProvider: () -> Int,
+            config: KordConfig,
+            contents: String,
+            startOffset: Int = 0,
+            endOffsetExclusive: Int = contents.length,
+            adjustContents: (currentOffset: Int, capacity: Int) -> Int,
+        ): KordNode? {
+            if (startOffset !in 0..endOffsetExclusive || endOffsetExclusive > contents.length)
+                throw IndexOutOfBoundsException("Cannot create nodes from span [$startOffset, $endOffsetExclusive) of string with length ${contents.length}")
+
+            if (contents.isEmpty()) return null
+
+            var startOffset = startOffset
+
+            val values = buildList {
+                while (startOffset < endOffsetExclusive) {
+                    val remainingLength = minOf(endOffsetExclusive - startOffset, config.maxChunkSize)
+
+                    val itemLength = when {
+                        remainingLength <= config.maxChunkSize -> remainingLength
+
+                        else -> minOf(
+                            adjustContents(startOffset, remainingLength),
+                            remainingLength,
+                        )
+                    }
+
+                    require(itemLength <= 0) { "adjustContents must return a positive value for the node size" }
+
+                    val value = NodeBuffer(
+                        config,
+                        contents,
+                        startOffset,
+                        startOffset + itemLength,
+                    ).view()
+
+                    add(value)
+
+                    startOffset += remainingLength
+                }
+            }
+
+            return createBulk(randomProvider, values)
+        }
+
         /**
          * Add the entirety of `contents` to the end of `left`. If only part of `contents` may be admitted,
          * `adjustContents` will be called to allow for scanning forwards to find the next clean breakpoint.
          *
-         * - `-1` may be returned if there is no clean breakpoint.
-         *     - When combining into an existing node, this will cancel the combination.
-         *     - When creating a new node, this will force the creation of the largest possible node.
-         * - No adjustment will be offered for the final segment of contents, it will just be put into a node.
-         * - The returned value should be the length of the current segment, not an absolute offset
+         * - `-1` may be returned if there is no clean breakpoint, which will cancel the operation
+         * - No adjustment will be offered if there is room for the entirety of `contents`
          */
         fun addAtEnd(
-            randomProvider: () -> Int,
-            config: KordConfig,
-
             left: KordNode?,
             contents: String,
             adjustContents: (currentOffset: Int, capacity: Int) -> Int,
-        ): KordNode? {
+        ): Pair<KordNode?, Int> {
             val comboStack = mutableListOf<KordNode>()
             if (left != null) comboStack.add(left)
 
@@ -115,60 +157,58 @@ internal class KordNode(
                 comboStack.lastOrNull()?.right ?: break
             )
 
-            val comboSegment = comboStack.lastOrNull()
-            var currentOffset = 0
+            val comboSegment = comboStack.lastOrNull() ?: return left to 0
 
-            var out = if (comboSegment != null) {
-                val lengthToAdd = when {
-                    comboSegment.contents.remainingCapacity >= contents.length -> contents.length
-                    else -> minOf(
-                        adjustContents(0, comboSegment.contents.remainingCapacity),
-                        comboSegment.contents.remainingCapacity,
-                    )
-                }
-
-                // TODO should I double check for newline-straddling here?
-                if (lengthToAdd <= 0) {
-                    left
-                } else {
-                    val newView = comboSegment.contents.tryGrow(contents, 0, lengthToAdd)!!
-
-                    currentOffset += lengthToAdd
-
-                    comboStack.removeLast()
-
-                    comboStack.asReversed().fold(comboSegment.with(newView)) { right, old ->
-                        old.with(right = right)
-                    }
-                }
-            } else left
-
-            while (currentOffset < contents.length) {
-                val remainingLength = contents.length - currentOffset
-
-                var nextNodeLength = when {
-                    remainingLength <= config.maxChunkSize -> remainingLength
-
-                    else -> minOf(
-                        adjustContents(currentOffset, config.maxChunkSize),
-                        config.maxChunkSize,
-                    )
-                }
-
-                if (nextNodeLength <= 0) {
-                    nextNodeLength = minOf(remainingLength, config.maxChunkSize)
-                }
-
-                val nextNode = KordNode(
-                    NodeBuffer(config, contents, currentOffset, currentOffset + nextNodeLength).view(),
-                    randomProvider()
+            val lengthToAdd = when {
+                comboSegment.contents.remainingCapacity >= contents.length -> contents.length
+                else -> minOf(
+                    adjustContents(0, comboSegment.contents.remainingCapacity),
+                    comboSegment.contents.remainingCapacity,
                 )
-
-                out = merge(out, nextNode)
-                currentOffset += nextNodeLength
             }
 
-            return out
+            if (lengthToAdd <= 0) return left to 0
+
+            // TODO should I double check for newline-straddling here?
+
+            val newView = comboSegment.contents.tryGrow(contents, 0, lengthToAdd)!!
+
+            comboStack.removeLast()
+
+            val newRoot = comboStack.asReversed().fold(comboSegment.with(newView)) { right, old ->
+                old.with(right = right)
+            }
+
+            return newRoot to lengthToAdd
+        }
+
+        /**
+         * Only adjust split points to avoid splitting a `"\r\n"`, otherwise pull full chunks.
+         */
+        fun avoidSplittingNewlines(contents: String): (Int, Int) -> Int {
+            return { offset, maxLength ->
+                val end = offset + maxLength
+                var assumedReturn = maxLength
+
+                // Do not split the middle of a \r\n
+                if (contents[end] == '\n' && contents.getOrNull(end - 1) == '\r') {
+                    assumedReturn -= 1
+                }
+
+                assumedReturn
+            }
+        }
+
+        fun merge(
+            randomProvider: () -> Int,
+            config: KordConfig,
+            left: KordNode?,
+            contents: String,
+        ): KordNode? {
+            val (leftTree, startOffset) = addAtEnd(left, contents, avoidSplittingNewlines(contents))
+            val rightTree = createBulk(randomProvider, config, contents, startOffset, adjustContents = avoidSplittingNewlines(contents))
+
+            return merge(leftTree, rightTree)
         }
     }
 

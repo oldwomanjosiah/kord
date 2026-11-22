@@ -80,15 +80,22 @@ internal class KordImpl internal constructor(
         val node = KordNode(NodeBuffer(config, contents).view(), randomProvider())
 
         val merged = when (at) {
-            0 -> KordNode.merge(node, root)
-            length -> KordNode.merge(root, node)
+            0 -> KordNode.merge(
+                KordNode.createBulk(randomProvider, config, contents, adjustContents = KordNode.avoidSplittingNewlines(contents)),
+                root
+            )
+
+            length -> KordNode.merge(randomProvider, config, root, contents)
+
             else -> {
                 val (left, right) = root?.split(at) ?: return withRoot(node)
 
                 KordNode.merge(
                     KordNode.merge(
+                        randomProvider,
+                        config,
                         left,
-                        node,
+                        contents,
                     ),
                     right,
                 )
@@ -104,10 +111,9 @@ internal class KordImpl internal constructor(
         if (contents.isEmpty()) return remove(charRange)
         if (charRange.isEmpty()) return insert(charRange.first, contents)
 
-        val node = KordNode(NodeBuffer(config, contents).view(), randomProvider())
         val (left, _, right) = cut(charRange)
 
-        return withRoot(KordNode.merge(KordNode.merge(left, node), right))
+        return withRoot(KordNode.merge(KordNode.merge(randomProvider, config, left, contents), right))
     }
 
     override fun remove(charRange: IntRange): KordImpl {
