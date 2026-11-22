@@ -1,7 +1,6 @@
 package com.oldwomanjosiah.kord.internal
 
 import com.oldwomanjosiah.kord.Kord
-import com.oldwomanjosiah.kord.KordNode
 import com.oldwomanjosiah.kord.kordOf
 import io.kotest.assertions.withClue
 import io.kotest.matchers.shouldBe

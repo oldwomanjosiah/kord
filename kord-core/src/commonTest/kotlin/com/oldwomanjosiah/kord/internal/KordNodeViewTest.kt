@@ -1,6 +1,5 @@
 package com.oldwomanjosiah.kord.internal
 
-import com.oldwomanjosiah.kord.KordNode
 import io.kotest.assertions.withClue
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb

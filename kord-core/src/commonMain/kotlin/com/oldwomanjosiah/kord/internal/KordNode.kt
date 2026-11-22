@@ -1,4 +1,6 @@
-package com.oldwomanjosiah.kord
+package com.oldwomanjosiah.kord.internal
+
+import com.oldwomanjosiah.kord.KordChunk
 
 internal class KordNode(
     val contents: String,

@@ -1,6 +1,5 @@
 package com.oldwomanjosiah.kord.internal
 
-import com.oldwomanjosiah.kord.KordImpl
 import io.kotest.assertions.assertSoftly
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.assertions.withClue

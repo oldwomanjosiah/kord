@@ -1,4 +1,8 @@
-package com.oldwomanjosiah.kord
+package com.oldwomanjosiah.kord.internal
+
+import com.oldwomanjosiah.kord.Kord
+import com.oldwomanjosiah.kord.KordChunk
+import com.oldwomanjosiah.kord.KordLine
 
 /**
  * Rope Data Structure.

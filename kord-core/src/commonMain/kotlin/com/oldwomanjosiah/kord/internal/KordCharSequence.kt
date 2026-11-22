@@ -1,4 +1,6 @@
-package com.oldwomanjosiah.kord
+package com.oldwomanjosiah.kord.internal
+
+import com.oldwomanjosiah.kord.Kord
 
 /** A [CharSequence] over [range] of [kord], indexed from the start of the range. */
 internal class KordCharSequence(
