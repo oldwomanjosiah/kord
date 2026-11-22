@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="kord-core-jvm">
+    <output-path>$PROJECT_DIR$/kord-core/build/libs</output-path>
+    <root id="archive" name="kord-core-jvm.jar">
+      <element id="module-output" name="kord.kord-core.jvmMain" />
+    </root>
+  </artifact>
+</component>
