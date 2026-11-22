@@ -10,16 +10,44 @@ internal class KordImpl internal constructor(
     override val length: Int
         get() = root.length
 
-    private fun checkIndexing(at: Int, exclusive: Boolean = true) {
-        val validEnd = if (exclusive) root.length else root.length - 1
-
-        if (at !in 0..validEnd) {
-            throw IndexOutOfBoundsException("Kord is ${root.length} bytes long, cannot index at $at")
+    /** Checks that [index] names a char: `0 until length`. */
+    private fun checkIndex(index: Int) {
+        if (index !in indices) {
+            throw IndexOutOfBoundsException("Kord is $length chars long, cannot index at $index")
         }
     }
 
+    /** Checks that [at] is a position between chars, where text can be inserted or cut: `0..length`. */
+    private fun checkPosition(at: Int) {
+        if (at !in 0..length) {
+            throw IndexOutOfBoundsException("Kord is $length chars long, cannot cut at $at")
+        }
+    }
+
+    /** Checks that [range] lies inside the kord. An empty range only needs a valid start position. */
+    private fun checkRange(range: IntRange) {
+        if (range.isEmpty()) {
+            checkPosition(range.first)
+        } else if (range.first < 0 || range.last >= length) {
+            throw IndexOutOfBoundsException("Kord is $length chars long, cannot access $range")
+        }
+    }
+
+    /**
+     * Cuts the tree into the text before, inside and after a non-empty, in-bounds [range].
+     *
+     * The end is cut first, so that both cuts are positions in the original text. Cutting the
+     * start first would shift the end by one whenever the start is nudged before a CR.
+     */
+    private fun cut(range: IntRange): Triple<KordNode?, KordNode?, KordNode?> {
+        val (rest, right) = root!!.split(range.last + 1)
+        val (left, middle) = rest?.split(range.first) ?: (null to null)
+
+        return Triple(left, middle, right)
+    }
+
     override fun get(index: Int): Char {
-        checkIndexing(index)
+        checkIndex(index)
 
         return root!![index]
     }
@@ -35,7 +63,7 @@ internal class KordImpl internal constructor(
     override fun insert(contents: String): Kord = insert(length, contents)
 
     override fun insert(at: Int, contents: String): KordImpl {
-        checkIndexing(at, true)
+        checkPosition(at)
 
         if (contents.isEmpty()) return this
 
@@ -61,33 +89,29 @@ internal class KordImpl internal constructor(
     }
 
     override fun replace(charRange: IntRange, contents: String): Kord {
+        checkRange(charRange)
+
         if (contents.isEmpty()) return remove(charRange)
         if (charRange.isEmpty()) return insert(charRange.first, contents)
 
-        checkIndexing(charRange.first)
-        checkIndexing(charRange.last)
-
         val node = KordNode(contents, randomProvider())
-
-        val (left, middle) = root!!.split(charRange.first)
-        val (_, right) = middle!!.split(charRange.last + 1 - charRange.first)
+        val (left, _, right) = cut(charRange)
 
         return KordImpl(KordNode.merge(KordNode.merge(left, node), right), randomProvider)
     }
 
     override fun remove(charRange: IntRange): Kord {
-        checkIndexing(charRange.first)
-        checkIndexing(charRange.last)
+        checkRange(charRange)
 
-        val (left, middle) = root!!.split(charRange.first)
-        val (_, right) = middle!!.split(charRange.last + 1 - charRange.first)
+        if (charRange.isEmpty()) return this
+
+        val (left, _, right) = cut(charRange)
 
         return KordImpl(KordNode.merge(left, right), randomProvider)
     }
 
     override fun chunks(charRange: IntRange): Iterable<KordChunk> {
-        checkIndexing(charRange.first)
-        checkIndexing(charRange.last)
+        checkRange(charRange)
 
         if (charRange.isEmpty()) return emptyList()
 
@@ -104,7 +128,7 @@ internal class KordImpl internal constructor(
     }
 
     fun split(at: Int): Pair<KordImpl, KordImpl> {
-        checkIndexing(at)
+        checkPosition(at)
 
         val (lhs, rhs) = root?.split(at) ?: return Pair(this, this)
 
