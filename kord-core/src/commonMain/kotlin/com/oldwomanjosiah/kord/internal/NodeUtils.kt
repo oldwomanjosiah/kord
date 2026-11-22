@@ -1,11 +1,11 @@
 package com.oldwomanjosiah.kord.internal
 
-val Char.isNewline: Boolean inline get() = when (this) {
+internal val Char.isNewline: Boolean inline get() = when (this) {
     '\n', '\r', '\u000B', '\u000C', '\u0085', '\u2028', '\u2029' -> true
     else -> false
 }
 
-val String.newlines: Int get() {
+internal val String.newlines: Int get() {
     var idx = 0
     var count = 0
 

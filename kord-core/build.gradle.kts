@@ -9,6 +9,25 @@
 plugins {
     // Apply the org.jetbrains.kotlin.jvm Plugin to add support for Kotlin.
     alias(libs.plugins.kotlin.multiplatform)
+    alias(libs.plugins.dokka)
+}
+
+dokka {
+    moduleName.set("kord")
+
+    dokkaSourceSets.configureEach {
+        sourceLink {
+            localDirectory.set(file("src"))
+            remoteUrl("https://github.com/oldwomanjosiah/kord/tree/main/kord-core/src")
+            remoteLineSuffix.set("#L")
+        }
+
+        // Implementation details live in *.internal packages; keep them out of the published docs.
+        perPackageOption {
+            matchingRegex.set(""".*\.internal(\..*)?""")
+            suppress.set(true)
+        }
+    }
 }
 
 kotlin {
