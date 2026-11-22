@@ -5,7 +5,7 @@ internal val Char.isNewline: Boolean inline get() = when (this) {
     else -> false
 }
 
-internal val String.newlines: Int get() {
+internal val CharSequence.newlines: Int get() {
     var idx = 0
     var count = 0
 

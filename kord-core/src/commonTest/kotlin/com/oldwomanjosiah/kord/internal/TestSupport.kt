@@ -1,6 +1,7 @@
 package com.oldwomanjosiah.kord.internal
 
 import com.oldwomanjosiah.kord.Kord
+import com.oldwomanjosiah.kord.KordConfig
 import com.oldwomanjosiah.kord.kordOf
 import io.kotest.assertions.withClue
 import io.kotest.matchers.shouldBe
@@ -80,7 +81,7 @@ private fun StringBuilder.appendInOrder(node: KordNode?) {
 }
 
 internal fun KordNode?.chunkTexts(): List<String> =
-    if (this == null) emptyList() else left.chunkTexts() + contents + right.chunkTexts()
+    if (this == null) emptyList() else left.chunkTexts() + contents.toString() + right.chunkTexts()
 
 internal fun KordNode?.allNodes(): List<KordNode> =
     if (this == null) emptyList() else left.allNodes() + listOf(this) + right.allNodes()
@@ -112,11 +113,14 @@ internal fun KordNode?.assertAggregates() {
     }
 }
 
-internal fun leaf(s: String, prio: Int) = KordNode(contents = s, prio = prio)
+/** A view over a fresh buffer holding exactly [s]. */
+internal fun view(s: String, config: KordConfig = KordConfig.Default): NodeBuffer.View = NodeBuffer(config, s).view()
+
+internal fun leaf(s: String, prio: Int) = KordNode(contents = view(s), prio = prio)
 
 /** Hand-built node with explicit children, for exact shapes. */
 internal fun node(s: String, prio: Int, left: KordNode? = null, right: KordNode? = null) =
-    KordNode(contents = s, prio = prio, left = left, right = right)
+    KordNode(contents = view(s), prio = prio, left = left, right = right)
 
 /** Builds a treap whose in-order chunks are [chunks], via merge only. */
 internal fun build(chunks: List<String>, rng: Random): KordNode? =

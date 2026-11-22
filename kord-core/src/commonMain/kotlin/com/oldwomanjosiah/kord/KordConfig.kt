@@ -1,4 +1,4 @@
-package com.oldwomanjosiah.kord.internal
+package com.oldwomanjosiah.kord
 
 data class KordConfig(
     val maxChunkSize: Int,

@@ -2,6 +2,7 @@ package com.oldwomanjosiah.kord.internal
 
 import com.oldwomanjosiah.kord.Kord
 import com.oldwomanjosiah.kord.KordChunk
+import com.oldwomanjosiah.kord.KordConfig
 import com.oldwomanjosiah.kord.KordLine
 
 /**
@@ -76,7 +77,7 @@ internal class KordImpl internal constructor(
 
         if (contents.isEmpty()) return this
 
-        val node = KordNode(contents, randomProvider())
+        val node = KordNode(NodeBuffer(config, contents).view(), randomProvider())
 
         val merged = when (at) {
             0 -> KordNode.merge(node, root)
@@ -103,7 +104,7 @@ internal class KordImpl internal constructor(
         if (contents.isEmpty()) return remove(charRange)
         if (charRange.isEmpty()) return insert(charRange.first, contents)
 
-        val node = KordNode(contents, randomProvider())
+        val node = KordNode(NodeBuffer(config, contents).view(), randomProvider())
         val (left, _, right) = cut(charRange)
 
         return withRoot(KordNode.merge(KordNode.merge(left, node), right))

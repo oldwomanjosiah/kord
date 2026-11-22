@@ -1,6 +1,5 @@
 package com.oldwomanjosiah.kord
 
-import com.oldwomanjosiah.kord.internal.KordConfig
 import com.oldwomanjosiah.kord.internal.KordImpl
 import kotlin.random.Random
 

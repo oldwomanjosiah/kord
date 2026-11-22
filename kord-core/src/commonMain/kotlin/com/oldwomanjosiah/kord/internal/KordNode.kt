@@ -1,9 +1,10 @@
 package com.oldwomanjosiah.kord.internal
 
 import com.oldwomanjosiah.kord.KordChunk
+import com.oldwomanjosiah.kord.KordConfig
 
 internal class KordNode(
-    val contents: String,
+    val contents: NodeBuffer.View,
 
     /** Random Priority for balancing */
     val prio: Int,
@@ -55,6 +56,120 @@ internal class KordNode(
                 else                    -> right.with(merge(left, right.left), right.right)
             }
         }
+
+        fun createBulk(
+            randomProvider: () -> Int,
+            vararg contents: NodeBuffer.View,
+        ): KordNode? {
+            if (contents.isEmpty()) return null
+
+            val rightSpineStack = mutableListOf<KordNode>()
+            val currentNode = { rightSpineStack.lastOrNull() }
+
+            for (contents in contents) {
+                val prio = randomProvider()
+                var leftChild: KordNode? = null
+
+                while (true) {
+                    val currentNode = currentNode()?.takeIf { it.prio < prio } ?: break
+                    rightSpineStack.removeLast()
+
+                    leftChild = currentNode.with(right = leftChild)
+                }
+
+                rightSpineStack.add(KordNode(contents, prio, left = leftChild))
+            }
+
+            var result = rightSpineStack.removeLast()
+
+            while (true) {
+                val next = rightSpineStack.removeLastOrNull() ?: break
+                result = next.with(right = result)
+            }
+
+            return result
+        }
+
+        /**
+         * Add the entirety of `contents` to the end of `left`. If only part of `contents` may be admitted,
+         * `adjustContents` will be called to allow for scanning forwards to find the next clean breakpoint.
+         *
+         * - `-1` may be returned if there is no clean breakpoint.
+         *     - When combining into an existing node, this will cancel the combination.
+         *     - When creating a new node, this will force the creation of the largest possible node.
+         * - No adjustment will be offered for the final segment of contents, it will just be put into a node.
+         * - The returned value should be the length of the current segment, not an absolute offset
+         */
+        fun addAtEnd(
+            randomProvider: () -> Int,
+            config: KordConfig,
+
+            left: KordNode?,
+            contents: String,
+            adjustContents: (currentOffset: Int, capacity: Int) -> Int,
+        ): KordNode? {
+            val comboStack = mutableListOf<KordNode>()
+            if (left != null) comboStack.add(left)
+
+            while (true) comboStack.add(
+                comboStack.lastOrNull()?.right ?: break
+            )
+
+            val comboSegment = comboStack.lastOrNull()
+            var currentOffset = 0
+
+            var out = if (comboSegment != null) {
+                val lengthToAdd = when {
+                    comboSegment.contents.remainingCapacity >= contents.length -> contents.length
+                    else -> minOf(
+                        adjustContents(0, comboSegment.contents.remainingCapacity),
+                        comboSegment.contents.remainingCapacity,
+                    )
+                }
+
+                // TODO should I double check for newline-straddling here?
+                if (lengthToAdd <= 0) {
+                    left
+                } else {
+                    val newView = comboSegment.contents.tryGrow(contents, 0, lengthToAdd)!!
+
+                    currentOffset += lengthToAdd
+
+                    comboStack.removeLast()
+
+                    comboStack.asReversed().fold(comboSegment.with(newView)) { right, old ->
+                        old.with(right = right)
+                    }
+                }
+            } else left
+
+            while (currentOffset < contents.length) {
+                val remainingLength = contents.length - currentOffset
+
+                var nextNodeLength = when {
+                    remainingLength <= config.maxChunkSize -> remainingLength
+
+                    else -> minOf(
+                        adjustContents(currentOffset, config.maxChunkSize),
+                        config.maxChunkSize,
+                    )
+                }
+
+                if (nextNodeLength <= 0) {
+                    nextNodeLength = minOf(remainingLength, config.maxChunkSize)
+                }
+
+                val nextNode = KordNode(
+                    NodeBuffer(config, contents, currentOffset, currentOffset + nextNodeLength).view(),
+                    randomProvider()
+                )
+
+                out = merge(out, nextNode)
+                currentOffset += nextNodeLength
+            }
+
+            return out
+        }
     }
 
     fun with(left: KordNode? = this.left, right: KordNode? = this.right) = KordNode(
@@ -63,6 +178,13 @@ internal class KordNode(
         chunkNewlines,
         left,
         right,
+    )
+
+    fun with(contents: NodeBuffer.View) = KordNode(
+        contents,
+        prio,
+        left = left,
+        right = right,
     )
 
     fun split(at: Int): Pair<KordNode?, KordNode?> {
@@ -100,8 +222,8 @@ internal class KordNode(
                     splitPoint -= 1
                 }
 
-                val cl = contents.substring(0, splitPoint)
-                val cr = contents.substring(splitPoint)
+                val cl = contents.subSequence(0, splitPoint)
+                val cr = contents.subSequence(splitPoint, contents.length)
 
                 when {
                     cl.isEmpty() -> left to with(left = null)
@@ -193,8 +315,8 @@ internal data class KordChunkImpl(
     val startIdx: Int,
     val endIdx: Int,
 ) : KordChunk {
-    override val contents: String
-        get() = node.contents.substring(startIdx, endIdx)
+    override val contents: CharSequence
+        get() = node.contents.subSequence(startIdx, endIdx)
 
     override val contentsRange: IntRange
         get() = startIdx + nodeCharOffset until endIdx + nodeCharOffset

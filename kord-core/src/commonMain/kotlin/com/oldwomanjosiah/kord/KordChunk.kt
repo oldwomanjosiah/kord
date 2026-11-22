@@ -1,6 +1,6 @@
 package com.oldwomanjosiah.kord
 
 interface KordChunk {
-    val contents: String
+    val contents: CharSequence
     val contentsRange: IntRange
 }
