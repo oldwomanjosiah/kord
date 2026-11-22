@@ -60,7 +60,7 @@ internal class KordImpl internal constructor(
         TODO("Not yet implemented")
     }
 
-    override fun insert(contents: String): Kord = insert(length, contents)
+    override fun insert(contents: String) = insert(length, contents)
 
     override fun insert(at: Int, contents: String): KordImpl {
         checkPosition(at)
@@ -88,7 +88,7 @@ internal class KordImpl internal constructor(
         return KordImpl(merged, randomProvider)
     }
 
-    override fun replace(charRange: IntRange, contents: String): Kord {
+    override fun replace(charRange: IntRange, contents: String): KordImpl {
         checkRange(charRange)
 
         if (contents.isEmpty()) return remove(charRange)
@@ -100,7 +100,7 @@ internal class KordImpl internal constructor(
         return KordImpl(KordNode.merge(KordNode.merge(left, node), right), randomProvider)
     }
 
-    override fun remove(charRange: IntRange): Kord {
+    override fun remove(charRange: IntRange): KordImpl {
         checkRange(charRange)
 
         if (charRange.isEmpty()) return this
@@ -135,6 +135,34 @@ internal class KordImpl internal constructor(
         return Pair(
             KordImpl(lhs, randomProvider),
             KordImpl(rhs, randomProvider),
+        )
+    }
+
+    override fun edit(
+        charRange: IntRange,
+        block: (Kord) -> Kord,
+    ): KordImpl {
+        val (left, region, right) = cut(charRange)
+
+        val new = block(
+            EditKord(
+                offset = left?.length ?: 0,
+                lineOffset = left?.newlines ?: 0,
+                outerLength = length,
+                delegate = KordImpl(region, randomProvider),
+            )
+        )
+
+        val newRegionRoot = when (new) {
+            is EditKord -> new.delegate.root
+            is KordImpl -> new.root
+
+            else -> error("edit's block must return a valid Kord")
+        }
+
+        return KordImpl(
+            KordNode.merge(KordNode.merge(left, newRegionRoot), right),
+            randomProvider,
         )
     }
 }

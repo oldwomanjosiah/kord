@@ -5,5 +5,13 @@ import kotlin.random.Random
 fun kordOf(vararg of: String): Kord {
     val seededRandom = Random(Random.nextLong())
 
-    return of.fold(KordImpl { seededRandom.nextInt() }) { impl, item -> impl.insert(impl.length, item) }
+    return kordOf(
+        of = of,
+        randomProvider = seededRandom::nextInt,
+    )
 }
+
+fun kordOf(
+    vararg of: String,
+    randomProvider: () -> Int,
+): Kord = of.fold(KordImpl(randomProvider = randomProvider)) { impl, item -> impl.insert(item) }

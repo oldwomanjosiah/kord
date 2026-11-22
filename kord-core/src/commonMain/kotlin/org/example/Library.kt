@@ -56,6 +56,14 @@ interface Kord: CharSequence {
 
     fun lines(lineRange: IntRange = 0 until lines): Iterable<KordLine>
     fun chunks(charRange: IntRange = indices): Iterable<KordChunk>
+
+    /**
+     * Perform multiple edits within [charRange] without creating intermediate `Kord`s for the whole structure.
+     */
+    fun edit(
+        charRange: IntRange,
+        block: (Kord) -> Kord,
+    ): Kord
 }
 
 interface KordChunk {
@@ -65,7 +73,7 @@ interface KordChunk {
 
 interface KordLine {
     val lineIdx: Int
-    val lineRange: IntRange
 
     val contents: String
+    val contentsRange: IntRange
 }
