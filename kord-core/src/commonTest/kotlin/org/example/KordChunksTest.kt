@@ -12,7 +12,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
 class KordChunksTest {
-    private fun Kord.chunkPairs(range: IntRange = indices) = chunks(range).map { it.contents to it.contentsRange }
+    private fun Kord.chunkPairs(range: IntRange = 0 until length) = chunks(range).map { it.contents to it.contentsRange }
 
     @Test
     fun `chunks of the whole kord follow the factory parts`() {

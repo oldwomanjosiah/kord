@@ -55,6 +55,7 @@ internal fun kordOf(parts: List<String>): Kord = kordOf(*parts.toTypedArray())
 internal fun assertKordMatches(kord: Kord, text: String) {
     withClue("kord expected to be ${text.debug()}") {
         kord.text() shouldBe text
+        kord.charSequence().toString() shouldBe text
         kord.length shouldBe text.length
         kord.isEmpty() shouldBe text.isEmpty()
         kord.lines shouldBe text.refNewlines() + 1
