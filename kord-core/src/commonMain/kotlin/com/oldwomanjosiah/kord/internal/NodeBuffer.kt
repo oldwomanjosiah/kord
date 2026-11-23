@@ -6,9 +6,9 @@ import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
 @OptIn(ExperimentalAtomicApi::class)
 internal class NodeBuffer private constructor(
-    private val configuration: KordConfig,
-    private val buffer: CharArray,
-    private val _size: AtomicInt,
+    internal val configuration: KordConfig,
+    internal val buffer: CharArray,
+    internal val _size: AtomicInt,
 ) {
     class View(
         internal val buffer: NodeBuffer,
@@ -80,6 +80,22 @@ internal class NodeBuffer private constructor(
             }
 
             return true
+        }
+
+        override fun hashCode(): Int = hashInto(0)
+
+        /**
+         * Continues a `31 * hash + char` hash from [seed] over this view's chars, so a whole kord
+         * can be hashed chunk by chunk without copying.
+         */
+        internal fun hashInto(seed: Int): Int {
+            var hash = seed
+
+            for (i in startIndex until endIndexExclusive) {
+                hash = 31 * hash + buffer.buffer[i].code
+            }
+
+            return hash
         }
     }
 

@@ -1,5 +1,7 @@
 package com.oldwomanjosiah.kord.internal
 
+import com.oldwomanjosiah.kord.internal.NodeBuffer.View
+
 internal val Char.isNewline: Boolean inline get() = when (this) {
     '\n', '\r', '\u000B', '\u000C', '\u0085', '\u2028', '\u2029' -> true
     else -> false
@@ -50,3 +52,25 @@ internal val Int.nextPowerOf2: Int
             else -> nearest
         }
     }
+
+/**
+ * True when char [index] of this view and char [otherIndex] of [other] are the same slot
+ * of the same buffer. The chars from there on are then identical for as long as both
+ * views last, with no need to compare them.
+ */
+internal fun NodeBuffer.View.sharesStorageAt(index: Int, other: View, otherIndex: Int): Boolean =
+    buffer === other.buffer && startIndex + index == other.startIndex + otherIndex
+
+/** Compares [count] chars from [index] in this view with [count] chars from [otherIndex] in [other]. */
+internal fun NodeBuffer.View.regionMatches(index: Int, other: View, otherIndex: Int, count: Int): Boolean {
+    val a = buffer.buffer
+    val b = other.buffer.buffer
+    val aStart = startIndex + index
+    val bStart = other.startIndex + otherIndex
+
+    for (k in 0 until count) {
+        if (a[aStart + k] != b[bStart + k]) return false
+    }
+
+    return true
+}

@@ -9,12 +9,57 @@ import com.oldwomanjosiah.kord.KordLine
  * Rope Data Structure.
  */
 internal class KordImpl internal constructor(
-    private val root: KordNode? = null,
-    private val config: KordConfig,
-    private val randomProvider: () -> Int,
+    internal val root: KordNode? = null,
+    internal val config: KordConfig,
+    internal val randomProvider: () -> Int,
 ): Kord {
     override val length: Int
         get() = root.length
+
+    /**
+     * Cached [hashCode]; 0 means not computed yet. A kord never changes, so the race between
+     * threads computing it is harmless: they all write the same value.
+     */
+    private var cachedHash = 0
+
+    /**
+     * Content equality with any other [Kord]. Chunk boundaries and config do not matter.
+     *
+     * Nothing is copied. Chunks are compared in place, and runs of chars that both kords read
+     * from the same buffer slot (common between versions of one kord) are skipped without
+     * comparing them.
+     */
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is Kord) return false
+        if (length != other.length) return false
+
+        if (other is KordImpl) {
+            if (root === other.root) return true
+            if (lines != other.lines) return false
+
+            val theirHash = other.cachedHash
+            if (cachedHash != 0 && theirHash != 0 && cachedHash != theirHash) return false
+        }
+
+        return chunksEqual(chunkContents(), other.chunkContents())
+    }
+
+    /**
+     * `31 * hash + char` over every char, the same formula as [NodeBuffer.View.hashCode].
+     * Computed once, chunk by chunk, without copying.
+     */
+    override fun hashCode(): Int {
+        var hash = cachedHash
+        if (hash != 0 || root == null) return hash
+
+        for (chunk in root) {
+            hash = chunk.node.contents.hashInto(hash)
+        }
+
+        cachedHash = hash
+        return hash
+    }
 
     /** Checks that [index] names a char: `0 until length`. */
     private fun checkIndex(index: Int) {

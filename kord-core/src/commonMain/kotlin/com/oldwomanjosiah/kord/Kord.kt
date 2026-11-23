@@ -3,10 +3,16 @@ package com.oldwomanjosiah.kord
 /**
  * Core Rope data-structure implementation.
  *
+ * ### Equality & Hashing
+ *
+ * Default implementation returned by [kordOf] has `O(n)` worst case time complexity for checking equality.
+ * Hashes are cached, but also cost `O(n)`. Equality checking can be faster when comparing a `Kord` that is the
+ * result of editing the other. Generally, these should be avoided.
+ *
  * ### Newline Nudging
  *
  * For all edits which insert/remove content, if the index provided is within a `\r\n` then the edit will be
- * placed _before_ the combo-newline. This is to prevent, as much as possible, having newlines split between chunks.
+ * placed _before_ the combo-newline. This prevents edits from separating a CRLF pair.
  *
  * @see kordOf constructor
  */
